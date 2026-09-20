@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechStore | Dashboard de Vendas</title>
+    <!-- Fonte Inter (Pro Level UI) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --accent: #3b82f6;
+            --success: #10b981;
+            --border: #2a2a2a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 32px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .filters {
+            display: flex;
+            gap: 16px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        label {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        select {
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .kpi-card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .kpi-title {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .kpi-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .chart-card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            min-height: 350px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .chart-header {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-muted);
+        }
+
+        .chart-container {
+            flex-grow: 1;
+            position: relative;
+            width: 100%;
+        }
+
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>TechSphere Analytics</h1>
+        <div class="filters">
+            <div class="filter-group">
+                <label for="filter-ano">Ano</label>
+                <select id="filter-ano"></select>
+            </div>
+            <div class="filter-group">
+                <label for="filter-mes">Mês</label>
+                <select id="filter-mes"></select>
+            </div>
+            <div class="filter-group">
+                <label for="filter-cidade">Cidade</label>
+                <select id="filter-cidade"></select>
+            </div>
+        </div>
+    </header>
+
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-title">Faturamento Total</div>
+            <div class="kpi-value" id="kpi-faturamento">R$ 0,00</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">Lucro Bruto</div>
+            <div class="kpi-value" id="kpi-lucro" style="color: var(--success)">R$ 0,00</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">Margem de Lucro</div>
+            <div class="kpi-value" id="kpi-margem">0%</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">Volume de Itens Vendidos</div>
+            <div class="kpi-value" id="kpi-volume">0</div>
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-card">
+            <div class="chart-header">Faturamento por Categoria</div>
+            <div class="chart-container">
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-header">Vendas por Canal</div>
+            <div class="chart-container">
+                <canvas id="doughnutChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card full-width">
+            <div class="chart-header">Evolução do Faturamento Diário</div>
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="lineChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Ingestão Contínua: Base de dados estruturada de forma modular para fácil atualização futura
+        const rawData = [{"ID_Pedido": 1001, "Data_Venda": "2026-05-12", "Canal_Venda": "E-commerce", "Cidade_Cliente": "Volta Redonda", "Categoria_Produto": "Notebooks", "Qtd_Vendida": 1, "Faturamento_Total": 4800, "Lucro_Bruto": 1300}, {"ID_Pedido": 1002, "Data_Venda": "2026-05-12", "Canal_Venda": "Loja F\u00edsica", "Cidade_Cliente": "Barra Mansa", "Categoria_Produto": "Celulares", "Qtd_Vendida": 2, "Faturamento_Total": 7000, "Lucro_Bruto": 1800}, {"ID_Pedido": 1003, "Data_Venda": "2026-05-13", "Canal_Venda": "E-commerce", "Cidade_Cliente": "Volta Redonda", "Categoria_Produto": "Perif\u00e9ricos", "Qtd_Vendida": 1, "Faturamento_Total": 320, "Lucro_Bruto": 140}, {"ID_Pedido": 1004, "Data_Venda": "2026-05-14", "Canal_Venda": "Loja F\u00edsica", "Cidade_Cliente": "Resende", "Categoria_Produto": "Desktops", "Qtd_Vendida": 1, "Faturamento_Total": 6200, "Lucro_Bruto": 1400}, {"ID_Pedido": 1005, "Data_Venda": "2026-05-15", "Canal_Venda": "E-commerce", "Cidade_Cliente": "Volta Redonda", "Categoria_Produto": "Celulares", "Qtd_Vendida": 1, "Faturamento_Total": 1200, "Lucro_Bruto": 350}, {"ID_Pedido": 1006, "Data_Venda": "2026-05-15", "Canal_Venda": "E-commerce", "Cidade_Cliente": "Barra Mansa", "Categoria_Produto": "Notebooks", "Qtd_Vendida": 1, "Faturamento_Total": 5900, "Lucro_Bruto": 1500}, {"ID_Pedido": 1007, "Data_Venda": "2026-05-16", "Canal_Venda": "Loja F\u00edsica", "Cidade_Cliente": "Volta Redonda", "Categoria_Produto": "Perif\u00e9ricos", "Qtd_Vendida": 2, "Faturamento_Total": 560, "Lucro_Bruto": 280}, {"ID_Pedido": 1008, "Data_Venda": "2026-05-18", "Canal_Venda": "E-commerce", "Cidade_Cliente": "Volta Redonda", "Categoria_Produto": "Notebooks", "Qtd_Vendida": 1, "Faturamento_Total": 4800, "Lucro_Bruto": 1300}, {"ID_Pedido": 1009, "Data_Venda": "2026-05-18", "Canal_Venda": "Loja F\u00edsica", "Cidade_Cliente": "Resende", "Categoria_Produto": "Celulares", "Qtd_Vendida": 1, "Faturamento_Total": 5500, "Lucro_Bruto": 1200}, {"ID_Pedido": 1010, "Data_Venda": "2026-05-20", "Canal_Venda": "E-commerce", "Cidade_Cliente": "Barra Mansa", "Categoria_Produto": "Perif\u00e9ricos", "Qtd_Vendida": 3, "Faturamento_Total": 450, "Lucro_Bruto": 225}, {"ID_Pedido": 1011, "Data_Venda": "2026-05-21", "Canal_Venda": "Loja F\u00edsica", "Cidade_Cliente": "Volta Redonda", "Categoria_Produto": "Desktops", "Qtd_Vendida": 2, "Faturamento_Total": 3600, "Lucro_Bruto": 1200}, {"ID_Pedido": 1012, "Data_Venda": "2026-05-22", "Canal_Venda": "E-commerce", "Cidade_Cliente": "Volta Redonda", "Categoria_Produto": "Celulares", "Qtd_Vendida": 1, "Faturamento_Total": 3500, "Lucro_Bruto": 900}, {"ID_Pedido": 1013, "Data_Venda": "2026-05-23", "Canal_Venda": "Loja F\u00edsica", "Cidade_Cliente": "Barra Mansa", "Categoria_Produto": "Notebooks", "Qtd_Vendida": 1, "Faturamento_Total": 2700, "Lucro_Bruto": 750}, {"ID_Pedido": 1014, "Data_Venda": "2026-05-25", "Canal_Venda": "E-commerce", "Cidade_Cliente": "Resende", "Categoria_Produto": "Perif\u00e9ricos", "Qtd_Vendida": 2, "Faturamento_Total": 640, "Lucro_Bruto": 280}, {"ID_Pedido": 1015, "Data_Venda": "2026-05-26", "Canal_Venda": "E-commerce", "Cidade_Cliente": "Volta Redonda", "Categoria_Produto": "Desktops", "Qtd_Vendida": 1, "Faturamento_Total": 6200, "Lucro_Bruto": 1400}, {"ID_Pedido": 1016, "Data_Venda": "2026-05-27", "Canal_Venda": "Loja F\u00edsica", "Cidade_Cliente": "Volta Redonda", "Categoria_Produto": "Celulares", "Qtd_Vendida": 1, "Faturamento_Total": 5500, "Lucro_Bruto": 1200}, {"ID_Pedido": 1017, "Data_Venda": "2026-05-28", "Canal_Venda": "E-commerce", "Cidade_Cliente": "Barra Mansa", "Categoria_Produto": "Notebooks", "Qtd_Vendida": 1, "Faturamento_Total": 4800, "Lucro_Bruto": 1300}, {"ID_Pedido": 1018, "Data_Venda": "2026-05-30", "Canal_Venda": "Loja F\u00edsica", "Cidade_Cliente": "Resende", "Categoria_Produto": "Perif\u00e9ricos", "Qtd_Vendida": 1, "Faturamento_Total": 280, "Lucro_Bruto": 140}, {"ID_Pedido": 1019, "Data_Venda": "2026-05-31", "Canal_Venda": "E-commerce", "Cidade_Cliente": "Volta Redonda", "Categoria_Produto": "Celulares", "Qtd_Vendida": 2, "Faturamento_Total": 2400, "Lucro_Bruto": 700}, {"ID_Pedido": 1020, "Data_Venda": "2026-06-01", "Canal_Venda": "E-commerce", "Cidade_Cliente": "Volta Redonda", "Categoria_Produto": "Notebooks", "Qtd_Vendida": 1, "Faturamento_Total": 5900, "Lucro_Bruto": 1500}];
+
+        const state = { ano: 'Todos', mes: 'Todos', cidade: 'Todos' };
+        let chartsInstance = {};
+
+        function init() {
+            // Definições visuais para Tema Escuro
+            Chart.defaults.color = '#a0a0a0';
+            Chart.defaults.font.family = 'Inter';
+            Chart.defaults.scale.grid.color = '#2a2a2a';
+            Chart.defaults.plugins.tooltip.backgroundColor = '#1e1e1e';
+            Chart.defaults.plugins.tooltip.titleColor = '#ffffff';
+            Chart.defaults.plugins.tooltip.bodyColor = '#a0a0a0';
+            Chart.defaults.plugins.tooltip.borderColor = '#2a2a2a';
+            Chart.defaults.plugins.tooltip.borderWidth = 1;
+
+            buildFilters();
+            applyData();
+        }
+
+        function buildFilters() {
+            const anos = new Set(), meses = new Set(), cidades = new Set();
+            rawData.forEach(d => {
+                const [ano, mes] = d.Data_Venda.split('-');
+                anos.add(ano);
+                meses.add(mes);
+                cidades.add(d.Cidade_Cliente);
+            });
+
+            populateSelect('filter-ano', anos);
+            populateSelect('filter-mes', meses);
+            populateSelect('filter-cidade', cidades);
+
+            document.getElementById('filter-ano').addEventListener('change', e => { state.ano = e.target.value; applyData(); });
+            document.getElementById('filter-mes').addEventListener('change', e => { state.mes = e.target.value; applyData(); });
+            document.getElementById('filter-cidade').addEventListener('change', e => { state.cidade = e.target.value; applyData(); });
+        }
+
+        function populateSelect(id, values) {
+            const select = document.getElementById(id);
+            select.innerHTML = '<option value="Todos">Todos</option>';
+            Array.from(values).sort().forEach(val => {
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.textContent = val;
+                select.appendChild(opt);
+            });
+        }
+
+        function applyData() {
+            const filteredData = rawData.filter(d => {
+                const [ano, mes] = d.Data_Venda.split('-');
+                return (state.ano === 'Todos' || ano === state.ano) &&
+                       (state.mes === 'Todos' || mes === state.mes) &&
+                       (state.cidade === 'Todos' || d.Cidade_Cliente === state.cidade);
+            });
+
+            updateKPIs(filteredData);
+            updateCharts(filteredData);
+        }
+
+        function updateKPIs(data) {
+            const faturamento = data.reduce((acc, curr) => acc + curr.Faturamento_Total, 0);
+            const lucro = data.reduce((acc, curr) => acc + curr.Lucro_Bruto, 0);
+            const margem = faturamento > 0 ? (lucro / faturamento) * 100 : 0;
+            const volume = data.reduce((acc, curr) => acc + curr.Qtd_Vendida, 0);
+
+            const brlFormat = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            document.getElementById('kpi-faturamento').textContent = brlFormat.format(faturamento);
+            document.getElementById('kpi-lucro').textContent = brlFormat.format(lucro);
+            document.getElementById('kpi-margem').textContent = margem.toFixed(1) + '%';
+            document.getElementById('kpi-volume').textContent = volume;
+        }
+
+        function updateCharts(data) {
+            const faturamentoCategoria = {}, volumeCanal = {}, faturamentoDiario = {};
+
+            data.forEach(d => {
+                faturamentoCategoria[d.Categoria_Produto] = (faturamentoCategoria[d.Categoria_Produto] || 0) + d.Faturamento_Total;
+                volumeCanal[d.Canal_Venda] = (volumeCanal[d.Canal_Venda] || 0) + d.Qtd_Vendida;
+                faturamentoDiario[d.Data_Venda] = (faturamentoDiario[d.Data_Venda] || 0) + d.Faturamento_Total;
+            });
+
+            renderBarChart(faturamentoCategoria);
+            renderDoughnutChart(volumeCanal);
+            renderLineChart(faturamentoDiario);
+        }
+
+        function renderBarChart(dataObj) {
+            const ctx = document.getElementById('barChart').getContext('2d');
+            const labels = Object.keys(dataObj);
+            const data = Object.values(dataObj);
+
+            if(chartsInstance.bar) chartsInstance.bar.destroy();
+            chartsInstance.bar = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Faturamento (R$)',
+                        data: data,
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 6
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function renderDoughnutChart(dataObj) {
+            const ctx = document.getElementById('doughnutChart').getContext('2d');
+            const labels = Object.keys(dataObj);
+            const data = Object.values(dataObj);
+
+            if(chartsInstance.doughnut) chartsInstance.doughnut.destroy();
+            chartsInstance.doughnut = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: ['#3b82f6', '#10b981'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '75%' }
+            });
+        }
+
+        function renderLineChart(dataObj) {
+            const ctx = document.getElementById('lineChart').getContext('2d');
+            const sortedDates = Object.keys(dataObj).sort();
+            const data = sortedDates.map(date => dataObj[date]);
+
+            const displayDates = sortedDates.map(d => {
+                const p = d.split('-');
+                return `${p[2]}/${p[1]}`;
+            });
+
+            if(chartsInstance.line) chartsInstance.line.destroy();
+            chartsInstance.line = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: displayDates,
+                    datasets: [{
+                        label: 'Faturamento Diário',
+                        data: data,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#1e1e1e',
+                        pointBorderColor: '#10b981',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        // Iniciar
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
