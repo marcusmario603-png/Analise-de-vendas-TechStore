@@ -2,7 +2,7 @@
 
 ## 🌐 Visão Geral
 
-Este repositório contém o arquivo `tech.html`, que consiste em um **Dashboard de Vendas Interativo** (Single Page Application) desenvolvido para a empresa (fictícia/estudo) **TechStore**.
+Este repositório contém o arquivo `tech.html`, que consiste em um **Dashboard de Vendas Interativo** (Single Page Application) desenvolvido para a empresa  **TechStore** na região sul fluminense.
 
 O painel foi construído com uma interface moderna (Dark Mode/Pro Level UI) e tem como foco a exibição clara de métricas comerciais e financeiras, permitindo que gestores e tomadores de decisão acompanhem o desempenho das vendas de forma ágil e visual.
 
